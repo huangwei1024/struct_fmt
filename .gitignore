@@ -11,3 +11,10 @@
 *.lai
 *.la
 *.a
+
+#.obj
+#.exe
+#.ncb
+#.suo
+#.pdb
+#.idb
