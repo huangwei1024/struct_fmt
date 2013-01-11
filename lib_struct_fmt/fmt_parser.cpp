@@ -5,8 +5,10 @@
 #define PARSEFUNC(x)	static bool Parse##x(const char*& scheme, CStructFormat* format)
 PARSEFUNC(ArrayDefine);
 PARSEFUNC(KeyDefine);
+PARSEFUNC(TypeDefine);
 PARSEFUNC(StructDefine);
 PARSEFUNC(StructList);
+PARSEFUNC(Struct);
 
 
 /*
@@ -51,22 +53,102 @@ static int GetFormatToken(const char*& stream, char* token)
  *	     |           |
  *	     +---number--+
  */
+static bool ParseArrayDefine(const char*& scheme, CStructFormat* format)
+{
+	char token[SF_KWMAXSIZE];
+	int token_len = GetFormatToken(scheme, token);
 
+	if (_stricmp(token, SF_KW_ABEGIN) == 0)
+	{
+		token_len = GetFormatToken(scheme, token);
+		// save key or number
+
+		token_len = GetFormatToken(scheme, token);
+		if (_stricmp(token, SF_KW_AEND) == 0)
+			return true;
+	}
+
+	return false;
+}
 
 /*
  *	KeyDefine
  *	
- *	--type--key--+---------------+--;--
- *	             |               |
- *	             +--ArrayDefine--+
+ *	--TypeDefine--key--+---------------+--;--
+ *	                   |               |
+ *	                   +--ArrayDefine--+
  */
 static bool ParseKeyDefine(const char*& scheme, CStructFormat* format)
+{
+	char token[SF_KWMAXSIZE];
+	int token_len;
+
+	if (ParseTypeDefine(scheme, format))
+	{
+		token_len = GetFormatToken(scheme, token);
+
+		const char* old = scheme;
+		token_len = GetFormatToken(scheme, token);
+		if (_stricmp(token, SF_KW_DELIM) != 0)
+		{
+			scheme = old;
+			return ParseArrayDefine(scheme, format);
+		}
+	}
+
+	return false;
+}
+
+/*
+ *	StructDefine
+ *	
+ *	--struct--StructList--
+ *	
+ */
+static bool ParseStructDefine(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
 	int token_len = GetFormatToken(scheme, token);
 
 	if (_stricmp(token, SF_KW_STRUCT) == 0)
+	{
 		return ParseStructList(scheme, format);
+	}
+
+	return false;
+}
+
+/*
+ *	TypeDefine
+ *	
+ *	--+------int8------+--
+ *	  |       ...      |
+ *	  +------bytes-----+
+ *	  |                |
+ *	  +------key-------+
+ *	  |                |
+ *	  +--StructDefine--+
+ */
+static bool ParseTypeDefine(const char*& scheme, CStructFormat* format)
+{
+	const char* old = scheme;
+	char token[SF_KWMAXSIZE];
+	int token_len = GetFormatToken(scheme, token);
+
+	static const char* base_types[] = SF_KW_BASETYPETBL;
+	for (int i = 0; i < sizeof(base_types)/sizeof(base_types[0]); ++ i)
+	{
+		if (_stricmp(token, base_types[i]))
+		{
+			return true;
+		}
+	}
+
+	scheme = old;
+	if (ParseStructDefine(scheme, format))
+	{
+		return true;
+	}
 
 	return false;
 }
@@ -74,9 +156,8 @@ static bool ParseKeyDefine(const char*& scheme, CStructFormat* format)
 /*
  *	StructList
  *	
- *	--{--+-----KeyDefine----+--}--
- *	     |                  |
- *	     +---StructDefine---+
+ *	--{----KeyDefine----}--
+ *	
  */
 static bool ParseStructList(const char*& scheme, CStructFormat* format)
 {
@@ -86,42 +167,39 @@ static bool ParseStructList(const char*& scheme, CStructFormat* format)
 	assert(token_len == 1);
 	if (_stricmp(token, SF_KW_SBEGIN) == 0)
 	{
-		const char* old = scheme;
-		bool ret = ParseStructDefine(scheme, format);
-		if (ret)
+		const char* old;
+		for (bool ret = true; ret; )
 		{
-			ret = ParseStructList(scheme, format);
-			return ret;
+			old = scheme;
+			ret = ParseKeyDefine(scheme, format);
 		}
-		
+
 		scheme = old;
-		ret = ParseKeyDefine(scheme, format);
-		assert(ret);
-		ret = ParseStructList(scheme, format);
-		return ret;
-	}
-	else if (_stricmp(token, SF_KW_SEND) == 0)
-	{
-		return true;
+		token_len = GetFormatToken(scheme, token);
+		if (_stricmp(token, SF_KW_SEND) == 0)
+			return true;
 	}
 	
 	return false;
 }
 
 /*
- *	StructDefine
+ *	Struct
  *	
- *	--struct--StructList---+---------+---;--
- *	                       |         |
- *	                       ArrayDefine
+ *	--StructDefine--;--
+ *	
  */
-static bool ParseStructDefine(const char*& scheme, CStructFormat* format)
+static bool ParseStruct(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
-	int token_len = GetFormatToken(scheme, token);
+	int token_len;
 
-	if (_stricmp(token, SF_KW_STRUCT) == 0)
-		return ParseStructList(scheme, format);
+	if (ParseStructDefine(scheme, format))
+	{
+		token_len = GetFormatToken(scheme, token);
+		if (_stricmp(token, SF_KW_DELIM) == 0)
+			return true;
+	}
 
 	return false;
 }
@@ -132,7 +210,7 @@ static bool ParseStructDefine(const char*& scheme, CStructFormat* format)
  */
 bool CStructFormatParser::Parse( const char* scheme, CStructFormat* format )
 {
-	ParseStructDefine(scheme, format);
+	ParseStruct(scheme, format);
 
 	return false;
 }
