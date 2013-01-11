@@ -1,5 +1,7 @@
 #include "struct_fmt.h"
 
+CStructFormatManager::FormatMap CStructFormatManager::s_format_map;
+
 void CStructFormatManager::AddFormat( const char* struct_name, CStructFormat* format )
 {
 	s_format_map[struct_name] = format;

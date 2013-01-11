@@ -2,15 +2,6 @@
 #include "def.h"
 #include "assert.h"
 
-#define PARSEFUNC(x)	static bool Parse##x(const char*& scheme, CStructFormat* format)
-PARSEFUNC(ArrayDefine);
-PARSEFUNC(KeyDefine);
-PARSEFUNC(TypeDefine);
-PARSEFUNC(StructDefine);
-PARSEFUNC(StructList);
-PARSEFUNC(Struct);
-
-
 /*
  *	get one token from format string
  *	
@@ -32,12 +23,16 @@ static int GetFormatToken(const char*& stream, char* token)
 	char* ptr = token;
 	for (char ch; ch = *stream; ++ stream)
 	{
+		bool stop = false;
 		switch (ch)
 		{
 		case SF_KW_STOPTBL:
+			stop = true;
 			break;
 		}
 		
+		if (stop)
+			break;
 		*ptr ++ = ch;//tolower(ch);
 	}
 	*ptr = 0;
@@ -45,6 +40,34 @@ static int GetFormatToken(const char*& stream, char* token)
 	return int(ptr - token);
 }
 
+/*
+ *	to number
+ *	
+ */
+static bool ToNumber(char* token, int& val)
+{
+	val = 0;
+	int len = (int)strlen(token);
+	int dig = 1;
+
+	for (int i = len-1; i >= 0; -- i)
+	{
+		if (SF_ISNUM(token[i]))
+		{
+			val += (token[i] - '0') * dig;
+			dig *= 10;
+		}
+		else
+			return false;
+	}
+	return true;
+}
+
+/*
+ *	key			: 变量名，字符串
+ *	number		: 数字常量，数字
+ *	structname	: 结构体名，字符串
+ */
 
 /*
  *	ArrayDefine
@@ -53,19 +76,34 @@ static int GetFormatToken(const char*& stream, char* token)
  *	     |           |
  *	     +---number--+
  */
-static bool ParseArrayDefine(const char*& scheme, CStructFormat* format)
+bool CStructFormatParser::ParseArrayDefine(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
 	int token_len = GetFormatToken(scheme, token);
 
+	format->top_elem->array = false;
 	if (_stricmp(token, SF_KW_ABEGIN) == 0)
 	{
 		token_len = GetFormatToken(scheme, token);
-		// save key or number
+		
+		int num;
+		if (ToNumber(token, num))
+		{
+			format->top_elem->array_len.num = num;
+			format->top_elem->array_len.key.clear();
+		}
+		else
+		{
+			format->top_elem->array_len.num = 0;
+			format->top_elem->array_len.key = token;
+		}
 
 		token_len = GetFormatToken(scheme, token);
 		if (_stricmp(token, SF_KW_AEND) == 0)
+		{
+			format->top_elem->array = true;
 			return true;
+		}
 	}
 
 	return false;
@@ -78,7 +116,7 @@ static bool ParseArrayDefine(const char*& scheme, CStructFormat* format)
  *	                   |               |
  *	                   +--ArrayDefine--+
  */
-static bool ParseKeyDefine(const char*& scheme, CStructFormat* format)
+bool CStructFormatParser::ParseKeyDefine(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
 	int token_len;
@@ -86,14 +124,27 @@ static bool ParseKeyDefine(const char*& scheme, CStructFormat* format)
 	if (ParseTypeDefine(scheme, format))
 	{
 		token_len = GetFormatToken(scheme, token);
+		format->top_elem->key = token;
 
 		const char* old = scheme;
 		token_len = GetFormatToken(scheme, token);
-		if (_stricmp(token, SF_KW_DELIM) != 0)
+		if (_stricmp(token, SF_KW_DELIM) == 0)
 		{
-			scheme = old;
-			return ParseArrayDefine(scheme, format);
+			format->AddElem(format->top_elem);
+			return true;
 		}
+
+		// ArrayDefine
+		scheme = old;
+		if (!ParseArrayDefine(scheme, format))
+			return false;
+
+		token_len = GetFormatToken(scheme, token);
+		if (_stricmp(token, SF_KW_DELIM) != 0)
+			return false;
+
+		format->AddElem(format->top_elem);
+		return true;
 	}
 
 	return false;
@@ -102,16 +153,19 @@ static bool ParseKeyDefine(const char*& scheme, CStructFormat* format)
 /*
  *	StructDefine
  *	
- *	--struct--StructList--
+ *	--struct--structname--StructList--
  *	
  */
-static bool ParseStructDefine(const char*& scheme, CStructFormat* format)
+bool CStructFormatParser::ParseStructDefine(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
 	int token_len = GetFormatToken(scheme, token);
 
 	if (_stricmp(token, SF_KW_STRUCT) == 0)
 	{
+		token_len = GetFormatToken(scheme, token);
+		format->name = token;
+
 		return ParseStructList(scheme, format);
 	}
 
@@ -125,30 +179,49 @@ static bool ParseStructDefine(const char*& scheme, CStructFormat* format)
  *	  |       ...      |
  *	  +------bytes-----+
  *	  |                |
- *	  +------key-------+
+ *	  +---structname---+
  *	  |                |
  *	  +--StructDefine--+
  */
-static bool ParseTypeDefine(const char*& scheme, CStructFormat* format)
+bool CStructFormatParser::ParseTypeDefine(const char*& scheme, CStructFormat* format)
 {
 	const char* old = scheme;
 	char token[SF_KWMAXSIZE];
 	int token_len = GetFormatToken(scheme, token);
 
-	static const char* base_types[] = SF_KW_BASETYPETBL;
+	static SFBaseTypeTBL base_types[] = SF_KW_BASETYPETBL;
 	for (int i = 0; i < sizeof(base_types)/sizeof(base_types[0]); ++ i)
 	{
-		if (_stricmp(token, base_types[i]))
+		if (_stricmp(token, base_types[i].str) == 0)
 		{
+			format->top_elem->type = base_types[i].type;
 			return true;
 		}
 	}
 
-	scheme = old;
-	if (ParseStructDefine(scheme, format))
+	CStructFormat* nest_format = CStructFormatManager::GetFormat(token);
+	if (nest_format)
 	{
-		return true;
+		format->top_elem->type = SF_KWN_STRUCT;
+		format->top_elem->struct_type = nest_format;
 	}
+	else
+	{
+		scheme = old;
+		token_len = GetFormatToken(scheme, token);
+
+		if (_stricmp(token, SF_KW_STRUCT) != 0)
+			return false;
+
+		nest_format = new CStructFormat;
+		if (ParseStructDefine(scheme, nest_format))
+		{
+			nest_format->name = token;
+			CStructFormatManager::AddFormat(token, nest_format);
+		}
+		delete nest_format;
+	}
+	
 
 	return false;
 }
@@ -159,7 +232,7 @@ static bool ParseTypeDefine(const char*& scheme, CStructFormat* format)
  *	--{----KeyDefine----}--
  *	
  */
-static bool ParseStructList(const char*& scheme, CStructFormat* format)
+bool CStructFormatParser::ParseStructList(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
 	int token_len = GetFormatToken(scheme, token);
@@ -168,6 +241,7 @@ static bool ParseStructList(const char*& scheme, CStructFormat* format)
 	if (_stricmp(token, SF_KW_SBEGIN) == 0)
 	{
 		const char* old;
+		format->top_elem->clear();
 		for (bool ret = true; ret; )
 		{
 			old = scheme;
@@ -189,7 +263,7 @@ static bool ParseStructList(const char*& scheme, CStructFormat* format)
  *	--StructDefine--;--
  *	
  */
-static bool ParseStruct(const char*& scheme, CStructFormat* format)
+bool CStructFormatParser::ParseStruct(const char*& scheme, CStructFormat* format)
 {
 	char token[SF_KWMAXSIZE];
 	int token_len;
@@ -210,7 +284,9 @@ static bool ParseStruct(const char*& scheme, CStructFormat* format)
  */
 bool CStructFormatParser::Parse( const char* scheme, CStructFormat* format )
 {
+	format->top_elem->clear();
 	ParseStruct(scheme, format);
+	format->top_elem->clear();
 
 	return false;
 }

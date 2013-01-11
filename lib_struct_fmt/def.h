@@ -24,25 +24,53 @@
 #define SF_KW_INT8			"int8"
 #define SF_KW_INT16			"int16"
 #define SF_KW_INT32			"int32"
-#define SF_KW_INT64			"int46"
+#define SF_KW_INT64			"int64"
 #define SF_KW_FLOAT			"float"
 #define SF_KW_DOUBLE		"double"
 #define SF_KW_BOOL			"bool"
+#define SF_KW_STRING		"string"
 #define SF_KW_BYTES			"bytes"
+
 
 #define SF_KWMAXSIZE		32
 
-enum
+enum 
 {
-	SF_KWI_UNKOWN = 0,
-	SF_KWI_KEYWORD,
-	SF_KWI_SIGN,
-	SF_KWI_STRING,
+	SF_KWN_UNKNOWN = 0,
+	SF_KWN_INT8,
+	SF_KWN_INT16,
+	SF_KWN_INT32,
+	SF_KWN_INT64,
+	SF_KWN_FLOAT,
+	SF_KWN_DOUBLE,
+	SF_KWN_BOOL,
+	SF_KWN_STRING,
+	SF_KWN_BYTES,
+	SF_KWN_STRUCT,
 };
 
 /*
  *	
  */
+
+struct SFBaseTypeTBL
+{
+	char	str[SF_KWMAXSIZE];
+	int		type;
+};
+
+#define SF_KW_BASETYPETBL	{\
+	{"", SF_KWN_UNKNOWN},\
+	{SF_KW_INT8, SF_KWN_INT8},\
+	{SF_KW_INT16, SF_KWN_INT16},\
+	{SF_KW_INT32, SF_KWN_INT32},\
+	{SF_KW_INT64, SF_KWN_INT64},\
+	{SF_KW_FLOAT, SF_KWN_FLOAT},\
+	{SF_KW_DOUBLE, SF_KWN_DOUBLE},\
+	{SF_KW_BOOL, SF_KWN_BOOL},\
+	{SF_KW_STRING, SF_KWN_STRING},\
+	{SF_KW_BYTES, SF_KWN_BYTES},\
+	{"", SF_KWN_STRUCT}}
 
 #define SF_KW_SIGNTBL		'{':case '}':case '[':case ']':case ';'
 #define SF_KW_STOPTBL		SF_KW_SIGNTBL:case ' ':case '\t':case '\r':case '\n'
@@ -50,5 +78,29 @@ enum
 #define SF_ISNUM(x)			('0' <= (x) && (x) <= '9')
 #define SF_ISALPHA(x)		('a' <= (x) && (x) <= 'z')
 #define SF_ISSPACE(x)		((x) == ' ' || (x) == '\t' || (x) == '\r' || (x) == '\n')
+
+
+struct SFStructElem
+{
+	int				type;
+	CStructFormat*	struct_type;
+	SF_KEY			key;
+	bool			array;
+	struct 
+	{
+		int			num;
+		SF_KEY		key;
+	}array_len;
+
+	void clear()
+	{
+		type = SF_KWN_UNKNOWN;
+		struct_type = NULL;
+		key.clear();
+		array = false;
+		array_len.num = 0;
+		array_len.key.clear();
+	}
+};
 
 #endif // __DEF_H__

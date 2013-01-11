@@ -19,6 +19,8 @@
 #include <map>
 #include <set>
 
+struct SFStructElem;
+
 class CStructFormat;
 class CStructFormatParser;
 class CStructFormatManager;
@@ -26,6 +28,10 @@ class CStructReader;
 class CStructWriter;
 class CStructValueReader;
 class CStructValueWriter;
+
+typedef std::string		SF_NAME;
+typedef std::string		SF_KEY;
+
 
 /*
  *	CStructFormat
@@ -35,11 +41,22 @@ class CStructValueWriter;
 class CStructFormat
 {
 public:
+	friend CStructFormatParser;
+
+	typedef SFStructElem*			Elem;
+	typedef std::vector <Elem>		Elems;
+
+public:
 	CStructFormat();
 	virtual ~CStructFormat();
 
-protected:
+	void							Clear();
+	int								AddElem(Elem elem);
 
+protected:
+	SF_NAME							name;
+	Elem							top_elem;
+	Elems							elems;
 };
 
 
@@ -52,6 +69,14 @@ class CStructFormatParser
 {
 public:
 	static bool						Parse(const char* scheme, CStructFormat* format);
+
+protected:
+	static bool						ParseArrayDefine(const char*& scheme, CStructFormat* format);
+	static bool						ParseKeyDefine(const char*& scheme, CStructFormat* format);
+	static bool						ParseTypeDefine(const char*& scheme, CStructFormat* format);
+	static bool						ParseStructDefine(const char*& scheme, CStructFormat* format);
+	static bool						ParseStructList(const char*& scheme, CStructFormat* format);
+	static bool						ParseStruct(const char*& scheme, CStructFormat* format);
 
 private:
 	CStructFormatParser()			{}
@@ -66,7 +91,7 @@ private:
 class CStructFormatManager
 {
 public:
-	typedef std::map <std::string, CStructFormat*>	FormatMap;
+	typedef std::map <SF_NAME, CStructFormat*>	FormatMap;
 
 public:
 	static void						AddFormat(const char* struct_name, CStructFormat* format);
