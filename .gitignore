@@ -37,3 +37,7 @@
 *.ncb
 *.suo
 *.user
+*.htm
+*.ilk
+*.res
+*.manifest

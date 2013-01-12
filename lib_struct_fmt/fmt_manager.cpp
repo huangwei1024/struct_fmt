@@ -10,7 +10,7 @@ void CStructFormatManager::AddFormat( const char* struct_name, CStructFormat* fo
 CStructFormat* CStructFormatManager::GetFormat( const char* struct_name )
 {
 	FormatMap::iterator it = s_format_map.find(struct_name);
-	if (it != s_format_map.end())
+	if (it == s_format_map.end())
 		return NULL;
 	return it->second;
 }

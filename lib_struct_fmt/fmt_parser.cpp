@@ -90,12 +90,23 @@ bool CStructFormatParser::ParseArrayDefine(const char*& scheme, CStructFormat* f
 		if (ToNumber(token, num))
 		{
 			format->top_elem->array_len.num = num;
-			format->top_elem->array_len.key.clear();
+			format->top_elem->array_len.key_type = NULL;
 		}
 		else
 		{
-			format->top_elem->array_len.num = 0;
-			format->top_elem->array_len.key = token;
+			for (unsigned int i = 0; i < format->elems.size(); ++ i)
+			{
+				if (format->elems[i]->key == token)
+				{
+					format->top_elem->array_len.num = 0;
+					format->top_elem->array_len.key_type = format->elems[i];
+				}
+			}
+			if (!format->top_elem->array_len.key_type)
+				return false;
+			SF_KWN type = format->top_elem->array_len.key_type->type;
+			if (!SF_KWN_ISINT(type))
+				return false;
 		}
 
 		token_len = GetFormatToken(scheme, token);
@@ -204,6 +215,7 @@ bool CStructFormatParser::ParseTypeDefine(const char*& scheme, CStructFormat* fo
 	{
 		format->top_elem->type = SF_KWN_STRUCT;
 		format->top_elem->struct_type = nest_format;
+		return true;
 	}
 	else
 	{
@@ -214,14 +226,17 @@ bool CStructFormatParser::ParseTypeDefine(const char*& scheme, CStructFormat* fo
 			return false;
 
 		nest_format = new CStructFormat;
+		scheme = old;
 		if (ParseStructDefine(scheme, nest_format))
 		{
-			nest_format->name = token;
-			CStructFormatManager::AddFormat(token, nest_format);
+			CStructFormatManager::AddFormat(nest_format->name.c_str(), nest_format);
+			format->top_elem->type = SF_KWN_STRUCT;
+			format->top_elem->struct_type = nest_format;
+			return true;
 		}
-		delete nest_format;
+		else
+			delete nest_format;
 	}
-	
 
 	return false;
 }
@@ -241,9 +256,9 @@ bool CStructFormatParser::ParseStructList(const char*& scheme, CStructFormat* fo
 	if (_stricmp(token, SF_KW_SBEGIN) == 0)
 	{
 		const char* old;
-		format->top_elem->clear();
 		for (bool ret = true; ret; )
 		{
+			format->top_elem->clear();
 			old = scheme;
 			ret = ParseKeyDefine(scheme, format);
 		}
@@ -285,8 +300,15 @@ bool CStructFormatParser::ParseStruct(const char*& scheme, CStructFormat* format
 bool CStructFormatParser::Parse( const char* scheme, CStructFormat* format )
 {
 	format->top_elem->clear();
-	ParseStruct(scheme, format);
+	bool ret = ParseStruct(scheme, format);
 	format->top_elem->clear();
 
-	return false;
+	assert(ret);
+	return ret;
+}
+
+
+SF_SCHEME CStructFormatParser::ToString( CStructFormat* format )
+{
+
 }

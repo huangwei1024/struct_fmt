@@ -34,7 +34,7 @@
 
 #define SF_KWMAXSIZE		32
 
-enum 
+enum SF_KWN
 {
 	SF_KWN_UNKNOWN = 0,
 	SF_KWN_INT8,
@@ -56,7 +56,7 @@ enum
 struct SFBaseTypeTBL
 {
 	char	str[SF_KWMAXSIZE];
-	int		type;
+	SF_KWN	type;
 };
 
 #define SF_KW_BASETYPETBL	{\
@@ -79,17 +79,18 @@ struct SFBaseTypeTBL
 #define SF_ISALPHA(x)		('a' <= (x) && (x) <= 'z')
 #define SF_ISSPACE(x)		((x) == ' ' || (x) == '\t' || (x) == '\r' || (x) == '\n')
 
+#define SF_KWN_ISINT(x)		((x) == SF_KWN_INT8 || (x) == SF_KWN_INT16 || (x) == SF_KWN_INT32 || (x) == SF_KWN_INT64)
 
 struct SFStructElem
 {
-	int				type;
+	SF_KWN			type;
 	CStructFormat*	struct_type;
 	SF_KEY			key;
 	bool			array;
 	struct 
 	{
-		int			num;
-		SF_KEY		key;
+		int				num;
+		SFStructElem*	key_type;
 	}array_len;
 
 	void clear()
@@ -99,7 +100,7 @@ struct SFStructElem
 		key.clear();
 		array = false;
 		array_len.num = 0;
-		array_len.key.clear();
+		array_len.key_type = NULL;
 	}
 };
 

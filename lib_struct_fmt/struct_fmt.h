@@ -31,6 +31,7 @@ class CStructValueWriter;
 
 typedef std::string		SF_NAME;
 typedef std::string		SF_KEY;
+typedef std::string		SF_SCHEME;
 
 
 /*
@@ -69,6 +70,7 @@ class CStructFormatParser
 {
 public:
 	static bool						Parse(const char* scheme, CStructFormat* format);
+	static SF_SCHEME				ToString(CStructFormat* format);
 
 protected:
 	static bool						ParseArrayDefine(const char*& scheme, CStructFormat* format);

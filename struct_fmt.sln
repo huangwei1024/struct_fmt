@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "struct_fmt", "struct_fmt\struct_fmt.vcproj", "{BA587A25-4775-4E94-8D26-2E6E1092AA5F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E1B0D352-8B51-4B01-B22C-ED63DF93DBCD} = {E1B0D352-8B51-4B01-B22C-ED63DF93DBCD}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lib_struct_fmt", "lib_struct_fmt\lib_struct_fmt.vcproj", "{E1B0D352-8B51-4B01-B22C-ED63DF93DBCD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BA587A25-4775-4E94-8D26-2E6E1092AA5F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BA587A25-4775-4E94-8D26-2E6E1092AA5F}.Debug|Win32.Build.0 = Debug|Win32
+		{BA587A25-4775-4E94-8D26-2E6E1092AA5F}.Release|Win32.ActiveCfg = Release|Win32
+		{BA587A25-4775-4E94-8D26-2E6E1092AA5F}.Release|Win32.Build.0 = Release|Win32
+		{E1B0D352-8B51-4B01-B22C-ED63DF93DBCD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E1B0D352-8B51-4B01-B22C-ED63DF93DBCD}.Debug|Win32.Build.0 = Debug|Win32
+		{E1B0D352-8B51-4B01-B22C-ED63DF93DBCD}.Release|Win32.ActiveCfg = Release|Win32
+		{E1B0D352-8B51-4B01-B22C-ED63DF93DBCD}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
