@@ -43,6 +43,11 @@ class CStructFormat
 {
 public:
 	friend CStructFormatParser;
+	friend CStructFormatManager;
+	friend CStructReader;
+	friend CStructWriter;
+	friend CStructValueReader;
+	friend CStructValueWriter;
 
 	typedef SFStructElem*			Elem;
 	typedef std::vector <Elem>		Elems;
@@ -52,6 +57,7 @@ public:
 	virtual ~CStructFormat();
 
 	void							Clear();
+	const char*						GetName();
 	int								AddElem(Elem elem);
 
 protected:
@@ -99,6 +105,9 @@ public:
 	static void						AddFormat(const char* struct_name, CStructFormat* format);
 	static CStructFormat*			GetFormat(const char* struct_name);
 
+	static const char*				QueryKeyTypeStr(const char* query);
+	static int						QueryKeyType(const char* query);
+
 protected:
 	static FormatMap				s_format_map;
 
@@ -106,7 +115,6 @@ private:
 	CStructFormatManager();
 	virtual ~CStructFormatManager();
 };
-
 
 /*
  *	CStructReader
@@ -133,7 +141,17 @@ class CStructWriter
  */
 class CStructValueReader
 {
+public:
+	CStructValueReader();
+	virtual ~CStructValueReader();
+
+	bool							Parse(const char* str_val, const CStructFormat* format);
+	bool							Parse(const char* str_val, const char* struct_name);
+
+protected:
+
 };
+
 
 /*
  *	CStructValueReader

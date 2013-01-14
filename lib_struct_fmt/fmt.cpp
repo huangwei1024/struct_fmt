@@ -27,6 +27,11 @@ void CStructFormat::Clear()
 	elems.clear();
 }
 
+const char* CStructFormat::GetName()
+{
+	return name.c_str();
+}
+
 int CStructFormat::AddElem( Elem elem )
 {
 	Elem copy = new SFStructElem;

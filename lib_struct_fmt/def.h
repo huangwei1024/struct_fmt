@@ -15,6 +15,7 @@
 /*
  *	key words define
  */
+#define SF_KW_UNKONWN		"unkonwn"
 #define SF_KW_STRUCT		"struct"
 #define SF_KW_SBEGIN		"{"
 #define SF_KW_SEND			"}"
@@ -30,7 +31,6 @@
 #define SF_KW_BOOL			"bool"
 #define SF_KW_STRING		"string"
 #define SF_KW_BYTES			"bytes"
-
 
 #define SF_KWMAXSIZE		32
 
@@ -49,6 +49,20 @@ enum SF_KWN
 	SF_KWN_STRUCT,
 };
 
+
+/*
+ *	string value define
+ */
+
+#define SF_SV_ASSIGN		"="
+#define SF_SV_DELIM			";"
+
+/*
+ *	query define
+ */
+
+#define SF_QUERY_DELIM		'.'
+
 /*
  *	
  */
@@ -58,6 +72,8 @@ struct SFBaseTypeTBL
 	char	str[SF_KWMAXSIZE];
 	SF_KWN	type;
 };
+
+extern SFBaseTypeTBL g_base_types[];
 
 #define SF_KW_BASETYPETBL	{\
 	{"", SF_KWN_UNKNOWN},\
@@ -83,14 +99,14 @@ struct SFBaseTypeTBL
 
 struct SFStructElem
 {
-	SF_KWN			type;
-	CStructFormat*	struct_type;
-	SF_KEY			key;
-	bool			array;
+	SF_KWN			type;			// 基本类型
+	CStructFormat*	struct_type;	// 结构体类型
+	SF_KEY			key;			// 变量名
+	bool			array;			// 是否数组
 	struct 
 	{
-		int				num;
-		SFStructElem*	key_type;
+		int				num;		// 数组大小
+		SFStructElem*	key_type;	// 数组大小变量
 	}array_len;
 
 	void clear()

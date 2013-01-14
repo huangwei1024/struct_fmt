@@ -1,11 +1,14 @@
 #include "struct_fmt.h"
 #include "def.h"
-#include "assert.h"
+#include <assert.h>
+#include <algorithm>
+
+SFBaseTypeTBL g_base_types[] = SF_KW_BASETYPETBL;
 
 /*
  *	get one token from format string
  *	
- *	return token len
+ *	@return token len
  */
 static int GetFormatToken(const char*& stream, char* token)
 {
@@ -41,10 +44,9 @@ static int GetFormatToken(const char*& stream, char* token)
 }
 
 /*
- *	to number
- *	
+ *	string to number
  */
-static bool ToNumber(char* token, int& val)
+static bool StrToNumber(char* token, int& val)
 {
 	val = 0;
 	int len = (int)strlen(token);
@@ -61,6 +63,40 @@ static bool ToNumber(char* token, int& val)
 			return false;
 	}
 	return true;
+}
+
+/*
+ *	number to string
+ */
+static int NumberToStr(int val, std::string& token, int base = 10)
+{
+	if (val == 0)
+	{
+		token = "0";
+		return 1;
+	}
+
+	token.resize(32);
+	char* old = (char*)token.c_str();
+	char* ptr = old;
+	if (val < 0)
+	{
+		*ptr ++ = '-';
+		val = -val;
+	}
+
+	for (; val; val /= base)
+	{
+		int dig = val % base;
+		if (dig < 10)
+			*ptr ++ = '0' + dig;
+		else
+			*ptr ++ = 'A' + dig - 10;
+	}
+	*ptr = 0;
+	token.resize(ptr - old);
+	std::reverse(old + (*old == '-'), ptr);
+	return (int)token.size();
 }
 
 /*
@@ -87,7 +123,7 @@ bool CStructFormatParser::ParseArrayDefine(const char*& scheme, CStructFormat* f
 		token_len = GetFormatToken(scheme, token);
 		
 		int num;
-		if (ToNumber(token, num))
+		if (StrToNumber(token, num))
 		{
 			format->top_elem->array_len.num = num;
 			format->top_elem->array_len.key_type = NULL;
@@ -200,12 +236,11 @@ bool CStructFormatParser::ParseTypeDefine(const char*& scheme, CStructFormat* fo
 	char token[SF_KWMAXSIZE];
 	int token_len = GetFormatToken(scheme, token);
 
-	static SFBaseTypeTBL base_types[] = SF_KW_BASETYPETBL;
-	for (int i = 0; i < sizeof(base_types)/sizeof(base_types[0]); ++ i)
+	for (int i = 0; i < sizeof(g_base_types)/sizeof(g_base_types[0]); ++ i)
 	{
-		if (_stricmp(token, base_types[i].str) == 0)
+		if (_stricmp(token, g_base_types[i].str) == 0)
 		{
-			format->top_elem->type = base_types[i].type;
+			format->top_elem->type = g_base_types[i].type;
 			return true;
 		}
 	}
@@ -307,8 +342,51 @@ bool CStructFormatParser::Parse( const char* scheme, CStructFormat* format )
 	return ret;
 }
 
-
+/*
+ *	format to string
+ */
 SF_SCHEME CStructFormatParser::ToString( CStructFormat* format )
 {
+	std::set <SF_NAME> struct_set;
+	const int k_buf_len = 1024;
+	char buf[k_buf_len], buf2[k_buf_len];
 
+	std::string str;
+	for (unsigned int i = 0; i < format->elems.size(); ++ i)
+	{
+		CStructFormat::Elem elem = format->elems[i];
+		SF_NAME type_name;
+		if (elem->type == SF_KWN_STRUCT)
+		{
+			assert(elem->struct_type);
+			type_name = elem->struct_type->GetName();
+			if (struct_set.find(type_name) == struct_set.end())
+			{
+				SF_SCHEME sub = ToString(elem->struct_type);
+				str += sub;
+				struct_set.insert(type_name);
+			}
+		}
+		else
+			type_name = g_base_types[elem->type].str;
+		
+		if (elem->array)
+		{
+			std::string arr_num;
+			if (elem->array_len.key_type)
+				arr_num = elem->array_len.key_type->key;
+			else
+				NumberToStr(elem->array_len.num, arr_num);
+			sprintf_s(buf2, k_buf_len, "%s %s[%s]; ", type_name.c_str(), elem->key.c_str(), arr_num.c_str());
+		}
+		else
+		{
+			sprintf_s(buf2, k_buf_len, "%s %s; ", type_name.c_str(), elem->key.c_str());
+		}
+
+		str += buf2;
+	}
+
+	sprintf_s(buf, k_buf_len, "%s %s { %s};", SF_KW_STRUCT, format->GetName(), str.c_str());
+	return buf;
 }
