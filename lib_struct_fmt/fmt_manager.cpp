@@ -63,7 +63,7 @@ CStructFormat* CStructFormatManager::GetFormat( const char* struct_name )
  */
 const char* CStructFormatManager::QueryKeyTypeStr( const char* query )
 {
-	return g_base_types[QueryKeyType(query)].str;
+	return g_all_types[QueryKeyType(query)].str;
 }
 
 

@@ -22,6 +22,7 @@
 struct SFStructElem;
 
 class CStructFormat;
+class CStructFormatIterator;
 class CStructFormatParser;
 class CStructFormatManager;
 class CStructReader;
@@ -30,9 +31,11 @@ class CStructValueReader;
 class CStructValueWriter;
 
 typedef std::string		SF_NAME;
+typedef std::string		SF_NAME_PATH;
 typedef std::string		SF_KEY;
 typedef std::string		SF_SCHEME;
 
+typedef int (*SF_VAR_STRUCT_ALLOC)(const char* name_path, char* dest, int len);
 
 /*
  *	CStructFormat
@@ -42,6 +45,7 @@ typedef std::string		SF_SCHEME;
 class CStructFormat
 {
 public:
+	friend CStructFormatIterator;
 	friend CStructFormatParser;
 	friend CStructFormatManager;
 	friend CStructReader;
@@ -53,19 +57,48 @@ public:
 	typedef std::vector <Elem>		Elems;
 
 public:
-	CStructFormat();
+	CStructFormat(const char* path = "");
 	virtual ~CStructFormat();
 
 	void							Clear();
 	const char*						GetName();
+	const char*						GetNamePath();
 	int								AddElem(Elem elem);
 
 protected:
+	SF_NAME_PATH					name_path;
 	SF_NAME							name;
 	Elem							top_elem;
 	Elems							elems;
+	
 };
 
+/*
+ *	CStructFormatIterator
+ *	
+ *	格式协议迭代遍历类
+ */
+class CStructFormatIterator
+{
+public:
+	typedef CStructFormat::Elems::iterator		ElemsIterator;
+
+public:
+	CStructFormatIterator(CStructFormat* format_);
+	virtual ~CStructFormatIterator();
+
+	void							Start();
+	bool							IsEnd();
+	void							SetBegin();
+	void							SetLoop(int n);
+	int								Next(CStructFormat::Elem& elem);
+	
+protected:
+	CStructFormat*					format;
+	CStructFormatIterator*			nest_iter;
+	ElemsIterator					cur_elem_iter;
+	int								loop_n;
+};
 
 /*
  *	CStructFormatParser
@@ -123,6 +156,22 @@ private:
  */
 class CStructReader
 {
+public:
+	CStructReader();
+	virtual ~CStructReader();
+
+	virtual void					Init(const char* buf_, int len_, CStructFormat* format_, SF_VAR_STRUCT_ALLOC var_alloc_);
+	virtual int						Unpack(char* struct_dest, int struct_len);
+
+protected:
+	virtual int						_GetNext(int type, char* dest);
+
+protected:
+	int								len;
+	const char*						buf;
+	const char*						cursor;
+	CStructFormat*					format;
+	SF_VAR_STRUCT_ALLOC				var_alloc;
 };
 
 /*

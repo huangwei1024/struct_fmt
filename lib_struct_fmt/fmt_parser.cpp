@@ -3,7 +3,8 @@
 #include <assert.h>
 #include <algorithm>
 
-SFBaseTypeTBL g_base_types[] = SF_KW_BASETYPETBL;
+SFTypeTBL g_base_types[] = SF_KW_BASETYPETBL;
+SFTypeTBL g_all_types[] = SF_KW_ALLTYPETBL;
 
 /*
  *	get one token from format string
@@ -212,6 +213,9 @@ bool CStructFormatParser::ParseStructDefine(const char*& scheme, CStructFormat* 
 	{
 		token_len = GetFormatToken(scheme, token);
 		format->name = token;
+		if (!format->name_path.empty())
+			format->name_path += ".";
+		format->name_path += token;
 
 		return ParseStructList(scheme, format);
 	}
@@ -245,32 +249,43 @@ bool CStructFormatParser::ParseTypeDefine(const char*& scheme, CStructFormat* fo
 		}
 	}
 
-	CStructFormat* nest_format = CStructFormatManager::GetFormat(token);
-	if (nest_format)
+	// 新struct
+	CStructFormat* nest_format = NULL;
+	if (_stricmp(token, SF_KW_STRUCT) == 0)
 	{
-		format->top_elem->type = SF_KWN_STRUCT;
-		format->top_elem->struct_type = nest_format;
-		return true;
-	}
-	else
-	{
-		scheme = old;
-		token_len = GetFormatToken(scheme, token);
-
-		if (_stricmp(token, SF_KW_STRUCT) != 0)
-			return false;
-
-		nest_format = new CStructFormat;
+		nest_format = new CStructFormat(format->GetNamePath());
 		scheme = old;
 		if (ParseStructDefine(scheme, nest_format))
 		{
-			CStructFormatManager::AddFormat(nest_format->name.c_str(), nest_format);
+			CStructFormatManager::AddFormat(nest_format->GetNamePath(), nest_format);
 			format->top_elem->type = SF_KWN_STRUCT;
 			format->top_elem->struct_type = nest_format;
 			return true;
 		}
 		else
 			delete nest_format;
+
+		return false;
+	}
+
+	// 先查找本命名空间内定义
+	SF_NAME_PATH path = format->GetNamePath();
+	path += "."; path += token;
+	nest_format = CStructFormatManager::GetFormat(path.c_str());
+	if (nest_format)
+	{
+		format->top_elem->type = SF_KWN_STRUCT;
+		format->top_elem->struct_type = nest_format;
+		return true;
+	}
+	
+	// 再查找全局命名空间内定义
+	nest_format = CStructFormatManager::GetFormat(token);
+	if (nest_format)
+	{
+		format->top_elem->type = SF_KWN_STRUCT;
+		format->top_elem->struct_type = nest_format;
+		return true;
 	}
 
 	return false;
@@ -368,7 +383,7 @@ SF_SCHEME CStructFormatParser::ToString( CStructFormat* format )
 			}
 		}
 		else
-			type_name = g_base_types[elem->type].str;
+			type_name = g_all_types[elem->type].str;
 		
 		if (elem->array)
 		{
@@ -390,3 +405,4 @@ SF_SCHEME CStructFormatParser::ToString( CStructFormat* format )
 	sprintf_s(buf, k_buf_len, "%s %s { %s};", SF_KW_STRUCT, format->GetName(), str.c_str());
 	return buf;
 }
+

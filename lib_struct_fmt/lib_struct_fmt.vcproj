@@ -155,6 +155,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\fmt_iterator.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\fmt_manager.cpp"
 				>
 			</File>

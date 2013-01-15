@@ -15,22 +15,22 @@
 /*
  *	key words define
  */
-#define SF_KW_UNKONWN		"unkonwn"
+#define SF_KW_UNKNOWN		"unkonwn"
 #define SF_KW_STRUCT		"struct"
 #define SF_KW_SBEGIN		"{"
 #define SF_KW_SEND			"}"
 #define SF_KW_ABEGIN		"["
 #define SF_KW_AEND			"]"
 #define SF_KW_DELIM			";"
-#define SF_KW_INT8			"int8"
-#define SF_KW_INT16			"int16"
-#define SF_KW_INT32			"int32"
-#define SF_KW_INT64			"int64"
-#define SF_KW_FLOAT			"float"
-#define SF_KW_DOUBLE		"double"
-#define SF_KW_BOOL			"bool"
-#define SF_KW_STRING		"string"
-#define SF_KW_BYTES			"bytes"
+#define SF_KW_INT8			"int8"			// 8bit int
+#define SF_KW_INT16			"int16"			// 16bit int
+#define SF_KW_INT32			"int32"			// 32bit int
+#define SF_KW_INT64			"int64"			// 64bit int
+#define SF_KW_FLOAT			"float"			// 32bit float
+#define SF_KW_DOUBLE		"double"		// 64bit double
+#define SF_KW_BOOL			"bool"			// 8bit bool
+#define SF_KW_STRING		"string"		// zero-terminated string
+#define SF_KW_BYTES			"byte"			// 8bit byte, for var-len string
 
 #define SF_KWMAXSIZE		32
 
@@ -64,16 +64,28 @@ enum SF_KWN
 #define SF_QUERY_DELIM		'.'
 
 /*
+ *	iterator define
+ */
+
+enum SF_IT_ERR
+{
+	SF_IT_ERR_OK = 0,
+	SF_IT_ERR_END,
+	SF_IT_ERR_NEEDLOOP,
+};
+
+/*
  *	
  */
 
-struct SFBaseTypeTBL
+struct SFTypeTBL
 {
 	char	str[SF_KWMAXSIZE];
 	SF_KWN	type;
 };
 
-extern SFBaseTypeTBL g_base_types[];
+extern SFTypeTBL g_base_types[];
+extern SFTypeTBL g_all_types[];
 
 #define SF_KW_BASETYPETBL	{\
 	{"", SF_KWN_UNKNOWN},\
@@ -87,6 +99,19 @@ extern SFBaseTypeTBL g_base_types[];
 	{SF_KW_STRING, SF_KWN_STRING},\
 	{SF_KW_BYTES, SF_KWN_BYTES},\
 	{"", SF_KWN_STRUCT}}
+
+#define SF_KW_ALLTYPETBL	{\
+	{SF_KW_UNKNOWN, SF_KWN_UNKNOWN},\
+	{SF_KW_INT8, SF_KWN_INT8},\
+	{SF_KW_INT16, SF_KWN_INT16},\
+	{SF_KW_INT32, SF_KWN_INT32},\
+	{SF_KW_INT64, SF_KWN_INT64},\
+	{SF_KW_FLOAT, SF_KWN_FLOAT},\
+	{SF_KW_DOUBLE, SF_KWN_DOUBLE},\
+	{SF_KW_BOOL, SF_KWN_BOOL},\
+	{SF_KW_STRING, SF_KWN_STRING},\
+	{SF_KW_BYTES, SF_KWN_BYTES},\
+	{SF_KW_STRUCT, SF_KWN_STRUCT}}
 
 #define SF_KW_SIGNTBL		'{':case '}':case '[':case ']':case ';'
 #define SF_KW_STOPTBL		SF_KW_SIGNTBL:case ' ':case '\t':case '\r':case '\n'

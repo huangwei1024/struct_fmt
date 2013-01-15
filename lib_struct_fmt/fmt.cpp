@@ -4,8 +4,9 @@
 
 
 
-CStructFormat::CStructFormat()
+CStructFormat::CStructFormat(const char* path /*= ""*/)
 {
+	name_path = path;
 	top_elem = new SFStructElem;
 	top_elem->clear();
 }
@@ -32,6 +33,11 @@ const char* CStructFormat::GetName()
 	return name.c_str();
 }
 
+const char* CStructFormat::GetNamePath()
+{
+	return name_path.c_str();
+}
+// TODO: 1
 int CStructFormat::AddElem( Elem elem )
 {
 	Elem copy = new SFStructElem;
