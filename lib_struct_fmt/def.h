@@ -1,8 +1,6 @@
 /*
 @file		def.h
 @author		huangwei
-@param		Email: huang-wei@corp.netease.com
-@param		Copyright (c) 2004-2013  网易杭州研究院
 @date		2013/1/10
 @brief		
 */
@@ -22,6 +20,7 @@
 #define SF_KW_ABEGIN		"["
 #define SF_KW_AEND			"]"
 #define SF_KW_DELIM			";"
+#define SF_KW_FIXPACK		"*"				// fix size struct
 #define SF_KW_INT8			"int8"			// 8bit int
 #define SF_KW_INT16			"int16"			// 16bit int
 #define SF_KW_INT32			"int32"			// 32bit int
@@ -30,7 +29,7 @@
 #define SF_KW_DOUBLE		"double"		// 64bit double
 #define SF_KW_BOOL			"bool"			// 8bit bool
 #define SF_KW_STRING		"string"		// zero-terminated string
-#define SF_KW_BYTES			"byte"			// 8bit byte, for var-len string
+#define SF_KW_BYTE			"byte"			// 8bit byte, for var-len string
 
 #define SF_KWMAXSIZE		32
 
@@ -45,7 +44,7 @@ enum SF_KWN
 	SF_KWN_DOUBLE,
 	SF_KWN_BOOL,
 	SF_KWN_STRING,
-	SF_KWN_BYTES,
+	SF_KWN_BYTE,
 	SF_KWN_STRUCT,
 };
 
@@ -67,15 +66,35 @@ enum SF_KWN
  *	iterator define
  */
 
-enum SF_IT_ERR
+enum SF_IT_RET
 {
-	SF_IT_ERR_OK = 0,
-	SF_IT_ERR_END,
-	SF_IT_ERR_NEEDLOOP,
+	SF_IT_RET_ERR = -999,
+	SF_IT_RET_ERR_NOARRSIZE,
+
+	SF_IT_RET_OK = 0,
+	SF_IT_RET_RECURSEIN,
+	SF_IT_RET_RECURSEOUT,
 };
 
+#define SF_IT_ERR(x)	((x) < 0)
+
 /*
- *	
+ *	type in c
+ */	
+#define SF_C_INT8		char
+#define SF_C_INT16		short
+#define SF_C_INT32		long
+#define SF_C_INT64		__int64
+#define SF_C_FLOAT		float
+#define SF_C_DOUBLE		double
+#define SF_C_BOOL		bool
+#define SF_C_STRING		char*
+#define SF_C_BYTE		unsigned char
+#define SF_C_STRUCT		struct
+
+
+/*
+ *	type table define
  */
 
 struct SFTypeTBL
@@ -97,7 +116,7 @@ extern SFTypeTBL g_all_types[];
 	{SF_KW_DOUBLE, SF_KWN_DOUBLE},\
 	{SF_KW_BOOL, SF_KWN_BOOL},\
 	{SF_KW_STRING, SF_KWN_STRING},\
-	{SF_KW_BYTES, SF_KWN_BYTES},\
+	{SF_KW_BYTE, SF_KWN_BYTE},\
 	{"", SF_KWN_STRUCT}}
 
 #define SF_KW_ALLTYPETBL	{\
@@ -110,10 +129,11 @@ extern SFTypeTBL g_all_types[];
 	{SF_KW_DOUBLE, SF_KWN_DOUBLE},\
 	{SF_KW_BOOL, SF_KWN_BOOL},\
 	{SF_KW_STRING, SF_KWN_STRING},\
-	{SF_KW_BYTES, SF_KWN_BYTES},\
+	{SF_KW_BYTE, SF_KWN_BYTE},\
 	{SF_KW_STRUCT, SF_KWN_STRUCT}}
 
-#define SF_KW_SIGNTBL		'{':case '}':case '[':case ']':case ';'
+// lookup in key words define
+#define SF_KW_SIGNTBL		'{':case '}':case '[':case ']':case ';':case '*'
 #define SF_KW_STOPTBL		SF_KW_SIGNTBL:case ' ':case '\t':case '\r':case '\n'
 
 #define SF_ISNUM(x)			('0' <= (x) && (x) <= '9')
@@ -126,7 +146,7 @@ struct SFStructElem
 {
 	SF_KWN			type;			// 基本类型
 	CStructFormat*	struct_type;	// 结构体类型
-	SF_KEY			key;			// 变量名
+	SF_Key			key;			// 变量名
 	bool			array;			// 是否数组
 	struct 
 	{
@@ -144,5 +164,22 @@ struct SFStructElem
 		array_len.key_type = NULL;
 	}
 };
+
+
+/*
+ *	aux
+ */
+
+#define IF_F_RETURN_0(x)\
+	if (!(x)) {assert(false); return 0;}
+
+#define IF_0_A_RETURN_0(x)\
+	if (0 == (x)) {assert(false); return 0;}
+
+#define IF_F_RETURN_F(x)\
+	if (!(x)) {assert(false); return false;}
+
+#define IF_0_A_RETURN_F(x)\
+	if (0 == (x)) {assert(false); return false;}
 
 #endif // __DEF_H__

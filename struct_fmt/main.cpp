@@ -35,7 +35,7 @@ int main()
 	CStructFormatManager::AddFormat(format->GetNamePath(), format);
 
 	// test format tostring
-	SF_SCHEME scheme = CStructFormatParser::ToString(format);
+	SF_Scheme scheme = CStructFormatParser::ToString(format);
 	printf("%s\n", scheme.c_str());
 
 	// test query key type

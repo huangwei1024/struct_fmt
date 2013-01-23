@@ -42,8 +42,24 @@ static int GetQueryToken(const char*& stream, std::string& token)
 	return (int)token.size();
 }
 
+
+CStructFormat* CStructFormatManager::Parse( const char* scheme )
+{
+	CStructFormat* format = new CStructFormat;
+	if (!CStructFormatParser::Parse(scheme, format))
+	{
+		delete format;
+		return NULL;
+	}
+	AddFormat(format->GetNamePath(), format);
+	return format;
+}
+
 void CStructFormatManager::AddFormat( const char* struct_name, CStructFormat* format )
 {
+	FormatMap::iterator it = s_format_map.find(struct_name);
+	if (it != s_format_map.end())
+		delete it->second;
 	s_format_map[struct_name] = format;
 }
 
@@ -84,7 +100,7 @@ int CStructFormatManager::QueryKeyType( const char* query )
 		bool find = false;
 		for (unsigned int i = 0; i < format->elems.size(); ++ i)
 		{
-			CStructFormat::Elem elem = format->elems[i];
+			SF_Elem elem = format->elems[i];
 			if (elem->key == token)
 			{
 				if (elem->struct_type)

@@ -126,11 +126,14 @@ bool CStructFormatParser::ParseArrayDefine(const char*& scheme, CStructFormat* f
 		int num;
 		if (StrToNumber(token, num))
 		{
+			// number
 			format->top_elem->array_len.num = num;
 			format->top_elem->array_len.key_type = NULL;
 		}
 		else
 		{
+			// key
+			// NOTE: now, only find in current format level
 			for (unsigned int i = 0; i < format->elems.size(); ++ i)
 			{
 				if (format->elems[i]->key == token)
@@ -141,6 +144,7 @@ bool CStructFormatParser::ParseArrayDefine(const char*& scheme, CStructFormat* f
 			}
 			if (!format->top_elem->array_len.key_type)
 				return false;
+			// array_len key type must is int*
 			SF_KWN type = format->top_elem->array_len.key_type->type;
 			if (!SF_KWN_ISINT(type))
 				return false;
@@ -201,7 +205,9 @@ bool CStructFormatParser::ParseKeyDefine(const char*& scheme, CStructFormat* for
 /*
  *	StructDefine
  *	
- *	--struct--structname--StructList--
+ *	--struct--+-----+--structname--StructList--
+ *	          |     |
+ *	          +--*--+
  *	
  */
 bool CStructFormatParser::ParseStructDefine(const char*& scheme, CStructFormat* format)
@@ -212,6 +218,12 @@ bool CStructFormatParser::ParseStructDefine(const char*& scheme, CStructFormat* 
 	if (_stricmp(token, SF_KW_STRUCT) == 0)
 	{
 		token_len = GetFormatToken(scheme, token);
+		if (_stricmp(token, SF_KW_FIXPACK) == 0)
+		{
+			format->fix_pack = true;
+			token_len = GetFormatToken(scheme, token);
+		}
+
 		format->name = token;
 		if (!format->name_path.empty())
 			format->name_path += ".";
@@ -269,7 +281,7 @@ bool CStructFormatParser::ParseTypeDefine(const char*& scheme, CStructFormat* fo
 	}
 
 	// 先查找本命名空间内定义
-	SF_NAME_PATH path = format->GetNamePath();
+	SF_NamePath path = format->GetNamePath();
 	path += "."; path += token;
 	nest_format = CStructFormatManager::GetFormat(path.c_str());
 	if (nest_format)
@@ -316,7 +328,15 @@ bool CStructFormatParser::ParseStructList(const char*& scheme, CStructFormat* fo
 		scheme = old;
 		token_len = GetFormatToken(scheme, token);
 		if (_stricmp(token, SF_KW_SEND) == 0)
+		{
+// 			// assign key path
+// 			for (CStructFormat::Elems::iterator it = format->elems.begin(); it != format->elems.end(); ++ it)
+// 			{
+// 				SF_Elem elem = *it;
+// 				elem->key_path = elem->key + "." + elem->key_path;
+// 			}
 			return true;
+		}
 	}
 	
 	return false;
@@ -360,24 +380,24 @@ bool CStructFormatParser::Parse( const char* scheme, CStructFormat* format )
 /*
  *	format to string
  */
-SF_SCHEME CStructFormatParser::ToString( CStructFormat* format )
+SF_Scheme CStructFormatParser::ToString( CStructFormat* format )
 {
-	std::set <SF_NAME> struct_set;
+	std::set <SF_Name> struct_set;
 	const int k_buf_len = 1024;
 	char buf[k_buf_len], buf2[k_buf_len];
 
 	std::string str;
 	for (unsigned int i = 0; i < format->elems.size(); ++ i)
 	{
-		CStructFormat::Elem elem = format->elems[i];
-		SF_NAME type_name;
+		SF_Elem elem = format->elems[i];
+		SF_Name type_name;
 		if (elem->type == SF_KWN_STRUCT)
 		{
 			assert(elem->struct_type);
 			type_name = elem->struct_type->GetName();
 			if (struct_set.find(type_name) == struct_set.end())
 			{
-				SF_SCHEME sub = ToString(elem->struct_type);
+				SF_Scheme sub = ToString(elem->struct_type);
 				str += sub;
 				struct_set.insert(type_name);
 			}

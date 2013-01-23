@@ -167,7 +167,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\reader.cpp"
+				RelativePath=".\process.cpp"
 				>
 			</File>
 			<File
@@ -176,10 +176,6 @@
 			</File>
 			<File
 				RelativePath=".\val_writer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\writer.cpp"
 				>
 			</File>
 		</Filter>
